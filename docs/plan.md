@@ -5,7 +5,7 @@
 Game rules, systems, and technical contracts for Crimson Lane (mobile browser MOBA).
 
 **Related docs:**
-[heroes.md](heroes.md) (hero content) ·
+[heroes/index.md](heroes/index.md) (hero content) ·
 [theme.md](theme.md) (visual/audio theme) ·
 [menu.md](menu.md) (menu flow) ·
 [index.md](index.md) (SDLC hub & progress)
@@ -130,7 +130,7 @@ Special cases (Dota 1 liberties):
 - **Shadow Fiend Q** — Three fixed-range razes (200/450/700); no target selection.
 - **Shadow Fiend R** — Self-centered AoE (~1000 radius); no cast range.
 
-Hero modules should define `castRangeByLevel` (or `castRange` for fixed) for targetable skills. See [heroes.md](heroes.md) for per-hero skill specs.
+Hero modules should define `castRangeByLevel` (or `castRange` for fixed) for targetable skills. See [heroes/index.md](heroes/index.md) for per-hero skill specs.
 
 ### Status effects (MVP)
 

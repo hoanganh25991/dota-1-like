@@ -16,7 +16,7 @@ You are a **Scene/Map/Visuals Implementer** in an orchestrator workflow. You rec
 1. **Read the workstream** — Understand every task assigned to you.
 2. **Read existing code** — Read the relevant files. Understand the Three.js patterns used: how meshes are created, how the scene graph is structured, how disposal works.
 3. **Check the theme** — Read `docs/theme.md` for color palette, style rules, and visual identity. New visuals should match.
-4. **Check hero specs** — If working on hero visuals, read `docs/heroes.md` for geometry and animation specs.
+4. **Check hero specs** — If working on hero visuals, read `docs/heroes/` (index + per-hero files) for geometry and animation specs.
 5. **Implement each task** — Follow existing Three.js patterns (BufferGeometry, MeshStandardMaterial, proper disposal).
 6. **Performance check** — Ensure new objects are properly disposed when removed. Avoid creating geometry/materials every frame. Use object pooling if the existing code does.
 7. **Self-check** — Re-read changes. Check for linter errors.

@@ -8,7 +8,7 @@ This project tracks all progress in **docs/index.md**. You MUST follow this work
 ## Before writing any code
 
 1. **Read `docs/index.md`** — check the Done, Requirements Plan, and Backlog sections. Confirm the task is in scope.
-2. **Read the relevant spec** — follow links in index.md to the spec that covers your task (plan.md, heroes.md, theme.md, menu.md).
+2. **Read the relevant spec** — follow links in index.md to the spec that covers your task (plan.md, heroes/index.md, theme.md, menu.md).
 3. If the task is not listed in Requirements Plan or Backlog, confirm with the user before implementing.
 
 ## After implementing
@@ -31,7 +31,7 @@ This project tracks all progress in **docs/index.md**. You MUST follow this work
 |------|---------|
 | `docs/index.md` | SDLC hub — progress tracking |
 | `docs/plan.md` | Game rules & systems spec |
-| `docs/heroes.md` | Hero geometry, stats, skills |
+| `docs/heroes/` | Hero geometry, stats, skills (index + per-hero files) |
 | `docs/theme.md` | Visual/audio theme |
 | `docs/menu.md` | Menu flow |
 | `docs/brief.md` | Original brief |
