@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CRIMSON LANE - Mobile MOBA</title>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://esm.sh/three@0.160.0",
+                "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <style>
+        /* CSS Reset & Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #07070f;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            color: #e0d8c8;
+            touch-action: none;
+        }
+
+        /* Theme Colors */
+        :root {
+            --bg-void: #07070f;
+            --bg-dark: #0d0d1a;
+            --bg-deep: #111128;
+            --gold: #ffcc44;
+            --gold-dim: #c8a84a;
+            --white: #e0d8c8;
+            --gray: #666688;
+            --sentinel: #1a8a1a;
+            --scourge: #8a1a1a;
+            --mana: #3366ff;
+            --border: #1e1e2e;
+            --border-active: #3a3a5a;
+        }
+
+        /* Screen Containers */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: none;
+            flex-direction: column;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Main Menu */
+        #main-menu {
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at center, #111128 0%, #07070f 100%);
+        }
+
+        .menu-title {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #ffcc44;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .menu-subtitle {
+            font-size: 1rem;
+            color: #666688;
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            width: 300px;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #07070f;
+            background-color: #ffcc44;
+            border: 2px solid #ffcc44;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            background-color: #ffe066;
+            border-color: #ffe066;
+            transform: scale(1.05);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background-color: #1e1e2e;
+            color: #e0d8c8;
+            border-color: #1e1e2e;
+        }
+
+        .btn-secondary:hover {
+            background-color: #2a2a4a;
+            border-color: #2a2a4a;
+        }
+
+        .btn-back {
+            background-color: #8a1a1a;
+            color: #e0d8c8;
+            border-color: #8a1a1a;
+            font-size: 1rem;
+            padding: 0.8rem 1.5rem;
+        }
+
+        .btn-back:hover {
+            background-color: #a02020;
+            border-color: #a02020;
+        }
+
+        /* Play Flow */
+        #play-flow {
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at center, #111128 0%, #07070f 100%);
+        }
+
+        .play-header {
+            font-size: 2rem;
+            color: #ffcc44;
+            margin-bottom: 2rem;
+        }
+
+        .play-step {
+            text-align: center;
+        }
+
+        .play-step h2 {
+            font-size: 1.5rem;
+            color: #e0d8c8;
+            margin-bottom: 1.5rem;
+        }
+
+        .opt-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .opt-btn {
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            color: #e0d8c8;
+            background-color: #1e1e2e;
+            border: 2px solid #1e1e2e;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .opt-btn:hover {
+            border-color: #ffcc44;
+            color: #ffcc44;
+        }
+
+        .opt-btn.selected {
+            background-color: #ffcc44;
+            color: #07070f;
+            border-color: #ffcc44;
+        }
+
+        /* Settings Screen */
+        #settings-screen {
+            background-color: #07070f;
+        }
+
+        .settings-header {
+            padding: 1rem;
+            background-color: #0d0d1a;
+            border-bottom: 1px solid #1e1e2e;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .settings-title {
+            font-size: 1.5rem;
+            color: #ffcc44;
+            flex: 1;
+        }
+
+        .settings-tabs {
+            display: flex;
+            background-color: #0d0d1a;
+            border-bottom: 1px solid #1e1e2e;
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: #666688;
+            font-size: 1rem;
+            font-weight: bold;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: #e0d8c8;
+            background-color: #111128;
+        }
+
+        .tab.active {
+            color: #ffcc44;
+            border-bottom-color: #ffcc44;
+        }
+
+        .settings-pane {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            background-color: #07070f;
+        }
+
+        .settings-pane h3 {
+            color: #ffcc44;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        .settings-pane p {
+            color: #666688;
+            margin-bottom: 0.5rem;
+            line-height: 1.6;
+        }
+
+        /* Hero Viewer Panel */
+        #hero-viewer-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #07070f;
+            z-index: 100;
+        }
+
+        #hv-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background-color: #0d0d1a;
+            border-bottom: 1px solid #1e1e2e;
+            display: flex;
+            align-items: center;
+            padding: 0 1rem;
+            z-index: 101;
+        }
+
+        .hv-back-btn {
+            margin-right: 1rem;
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: #e0d8c8;
+        }
+
+        .hv-title {
+            font-size: 1.5rem;
+            color: #ffcc44;
+            flex: 1;
+        }
+
+        #hv-hero-list {
+            position: absolute;
+            left: 0;
+            top: 60px;
+            bottom: 0;
+            width: 120px;
+            background-color: #0d0d1a;
+            border-right: 1px solid #1e1e2e;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0.5rem 0;
+            z-index: 101;
+        }
+
+        .hv-hero-item {
+            width: 80px;
+            height: 80px;
+            margin: 0.5rem 0;
+            background-color: #111128;
+            border: 2px solid #1e1e2e;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .hv-hero-item:hover {
+            border-color: #ffcc44;
+        }
+
+        .hv-hero-item.active {
+            border-color: #ffcc44;
+            background-color: #1e1e2e;
+        }
+
+        .hv-hero-avatar {
+            font-size: 2.5rem;
+        }
+
+        .hv-hero-name {
+            font-size: 0.7rem;
+            color: #e0d8c8;
+            text-align: center;
+            margin-top: 0.25rem;
+        }
+
+        #hv-viewer-container {
+            position: absolute;
+            top: 60px;
+            left: 120px;
+            right: 0;
+            bottom: 0;
+            overflow-y: auto;
+            background-color: #07070f;
+        }
+
+        .hv-hero-view {
+            padding: 1rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .hv-canvas-container {
+            width: 100%;
+            height: 300px;
+            background-color: #111128;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .hv-stats-panel {
+            background-color: #0d0d1a;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .hv-stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #1e1e2e;
+        }
+
+        .hv-stat-label {
+            color: #666688;
+        }
+
+        .hv-stat-value {
+            color: #ffcc44;
+            font-weight: bold;
+        }
+
+        .hv-skill-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .hv-skill-slot {
+            background-color: #111128;
+            border: 2px solid #1e1e2e;
+            border-radius: 4px;
+            padding: 0.75rem 0.5rem;
+            text-align: center;
+        }
+
+        .hv-skill-key {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #e0d8c8;
+        }
+
+        .hv-skill-type {
+            font-size: 0.7rem;
+            color: #666688;
+            margin-top: 0.25rem;
+        }
+
+        .hv-skill-info {
+            font-size: 0.75rem;
+            color: #c8a84a;
+            margin-top: 0.25rem;
+        }
+
+        /* Game HUD */
+        #game-hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .hud-top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: linear-gradient(to bottom, rgba(13,13,26,0.8), rgba(7,7,15,0));
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+        }
+
+        .hud-team-strap {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .hud-hero-slot {
+            width: 80px;
+            height: 60px;
+            background-color: rgba(30,30,46,0.6);
+            border: 1px solid #1e1e2e;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hud-hero-slot.enemy {
+            border-color: #8a1a1a;
+        }
+
+        .hud-hero-slot.dead {
+            opacity: 0.5;
+        }
+
+        .hud-hero-portrait {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 50px;
+            height: 50px;
+            background-color: #111128;
+            border-radius: 4px;
+        }
+
+        .hud-hero-name {
+            position: absolute;
+            top: 54px;
+            left: 2px;
+            font-size: 0.7rem;
+            color: #e0d8c8;
+        }
+
+        .hud-hero-hp-bar {
+            position: absolute;
+            bottom: 2px;
+            left: 2px;
+            right: 2px;
+            height: 4px;
+            background-color: #333;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .hud-hero-hp-fill {
+            height: 100%;
+            background-color: var(--sentinel);
+        }
+
+        .hud-hero-hp-fill.enemy {
+            background-color: var(--scourge);
+        }
+
+        .hud-center-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hud-timer {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ffcc44;
+            font-family: monospace;
+        }
+
+        .hud-day-night {
+            font-size: 1.2rem;
+            margin-top: 0.25rem;
+        }
+
+        .hud-ancient-indicator {
+            position: absolute;
+            bottom: 1rem;
+            right: 1rem;
+            font-size: 1.5rem;
+            color: #8a1a1a;
+        }
+
+        .hud-ancient-indicator.sentinel {
+            color: #1a8a1a;
+        }
+
+        /* Bottom Action Area */
+        .hud-bottom-area {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 180px;
+            display: flex;
+            pointer-events: auto;
+        }
+
+        /* Mobile landscape layout */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .hud-bottom-area {
+                flex-direction: row;
+            }
+
+            .hud-joystick-zone {
+                width: 46vw;
+                height: 100%;
+                pointer-events: auto;
+            }
+
+            .hud-action-zone {
+                flex: 1;
+                display: flex;
+                justify-content: flex-end;
+                align-items: flex-end;
+                padding: 1rem;
+                gap: 1rem;
+            }
+
+            .hud-joystick-base {
+                position: absolute;
+                bottom: 4rem;
+                left: 2rem;
+                width: 80px;
+                height: 80px;
+                background-color: rgba(255, 204, 68, 0.1);
+                border: 2px solid rgba(255, 204, 68, 0.3);
+                border-radius: 50%;
+                pointer-events: none;
+            }
+
+            .hud-joystick-knob {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 40px;
+                height: 40px;
+                background-color: rgba(255, 204, 68, 0.5);
+                border-radius: 50%;
+                transform: translate(-50%, -50%);
+                pointer-events: none;
+            }
+
+            .hud-attack-btn {
+                width: 80px;
+                height: 80px;
+                background-color: rgba(138, 26, 26, 0.6);
+                border: 3px solid #ffcc44;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 2rem;
+                color: #e0d8c8;
+                cursor: pointer;
+                margin-bottom: 1rem;
+            }
+
+            .hud-attack-btn.active {
+                background-color: rgba(255, 204, 68, 0.3);
+                animation: atkPulse 1s infinite;
+            }
+
+            @keyframes atkPulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.1); }
+            }
+
+            .hud-skill-btn {
+                width: 60px;
+                height: 60px;
+                background-color: rgba(30, 30, 46, 0.8);
+                border: 2px solid #1e1e2e;
+                border-radius: 8px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+            }
+
+            .hud-skill-btn.active {
+                border-color: #ffcc44;
+                background-color: rgba(255, 204, 68, 0.2);
+            }
+
+            .hud-skill-btn.cooldown {
+                opacity: 0.6;
+            }
+
+            .hud-skill-key {
+                font-size: 1rem;
+                font-weight: bold;
+                color: #e0d8c8;
+            }
+
+            .hud-skill-cd {
+                font-size: 0.7rem;
+                color: #c8a84a;
+                margin-top: 2px;
+            }
+
+            .hud-skill-icon {
+                font-size: 1.2rem;
+                margin-bottom: 2px;
+            }
+
+            .hud-inventory {
+                position: absolute;
+                right: 1rem;
+                bottom: 18rem;
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0.5rem;
+            }
+
+            .hud-item-slot {
+                width: 50px;
+                height: 50px;
+                background-color: rgba(30, 30, 46, 0.6);
+                border: 1px solid #1e1e2e;
+                border-radius: 4px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .hud-shop-btn {
+                position: absolute;
+                right: 1rem;
+                bottom: 12rem;
+                width: 50px;
+                height: 50px;
+                background-color: rgba(30, 30, 46, 0.6);
+                border: 1px solid #ffcc44;
+                border-radius: 4px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                font-size: 1.5rem;
+            }
+
+            .hud-minimap {
+                position: absolute;
+                top: 1rem;
+                left: 1rem;
+                width: 150px;
+                height: 150px;
+                background-color: rgba(30, 30, 46, 0.6);
+                border: 2px solid #1e1e2e;
+                border-radius: 4px;
+                pointer-events: auto;
+            }
+
+            .hud-minimap-btn {
+                position: absolute;
+                bottom: 0.5rem;
+                left: 0.5rem;
+                width: 24px;
+                height: 24px;
+                background-color: rgba(255, 204, 68, 0.6);
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 1rem;
+                color: #07070f;
+            }
+        }
+
+        /* Desktop layout overrides */
+        @media (min-width: 769px), (orientation: portrait) {
+            .hud-bottom-area {
+                flex-direction: column;
+            }
+
+            .hud-joystick-zone {
+                display: none;
+            }
+
+            .hud-action-zone {
+                width: 100%;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 2rem;
+            }
+
+            .hud-joystick-base,
+            .hud-joystick-knob {
+                display: none;
+            }
+
+            .hud-attack-btn {
+                width: 100px;
+                height: 100px;
+            }
+
+            .hud-skill-btn {
+                width: 80px;
+                height: 80px;
+            }
+
+            .hud-inventory {
+                position: absolute;
+                right: 1rem;
+                bottom: 22rem;
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .hud-item-slot {
+                width: 70px;
+                height: 70px;
+            }
+
+            .hud-shop-btn {
+                position: absolute;
+                right: 1rem;
+                bottom: 14rem;
+                width: 70px;
+                height: 70px;
+            }
+
+            .hud-minimap {
+                position: absolute;
+                top: 1rem;
+                left: 1rem;
+                width: 200px;
+                height: 200px;
+            }
+        }
+
+        /* Skill bar */
+        .hud-skill-bar {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1rem;
+        }
+
+        /* End Screen */
+        #end-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(7, 7, 15, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        .end-content {
+            text-align: center;
+        }
+
+        .end-title {
+            font-size: 5rem;
+            font-weight: bold;
+            margin-bottom: 2rem;
+        }
+
+        .end-victory {
+            color: #ffcc44;
+            text-shadow: 0 0 20px rgba(255, 204, 68, 0.5);
+        }
+
+        .end-defeat {
+            color: #ff2200;
+            text-shadow: 0 0 20px rgba(255, 34, 0, 0.5);
+        }
+
+        .end-score {
+            font-size: 1.5rem;
+            color: #e0d8c8;
+            margin-bottom: 2rem;
+        }
+
+        /* Loading Screen */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #07070f;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 300;
+        }
+
+        .loader {
+            text-align: center;
+        }
+
+        .loader-logo {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #ffcc44;
+            margin-bottom: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+
+        .loader-stage {
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            color: #666688;
+        }
+
+        .loader-stage.completed {
+            color: #ffcc44;
+        }
+
+        .loader-bar-container {
+            width: 300px;
+            height: 4px;
+            background-color: #1e1e2e;
+            border-radius: 2px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .loader-bar {
+            height: 100%;
+            width: 0%;
+            background-color: #ffcc44;
+            transition: width 0.3s;
+        }
+
+        .loader-progress {
+            font-size: 0.9rem;
+            color: #c8a84a;
+        }
+
+        .loader-warning {
+            margin-top: 2rem;
+            padding: 1rem;
+            background-color: #1e1e2e;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .loader-error {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #8a1a1a;
+            color: #e0d8c8;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .loader-error a {
+            color: #ffcc44;
+            text-decoration: underline;
+        }
+
+        /* Canvas Container */
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        /* Mobile scrollbar hide */
+        .screen::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .screen::-webkit-scrollbar-track {
+            background: #07070f;
+        }
+
+        .screen::-webkit-scrollbar-thumb {
+            background: #1e1e2e;
+            border-radius: 3px;
+        }
+
+        .screen::-webkit-scrollbar-thumb:hover {
+            background: #3a3a5a;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loader">
+            <div class="loader-logo">CRIMSON LANE</div>
+            <div class="loader-stage" id="loader-stage-1">>Loading Three.js...</div>
+            <div class="loader-stage" id="loader-stage-2">>Loading QR Library...</div>
+            <div class="loader-stage" id="loader-stage-3">>Initializing...</div>
+            <div class="loader-bar-container">
+                <div class="loader-bar" id="loader-bar"></div>
+            </div>
+            <div class="loader-progress" id="loader-progress">0%</div>
+            <div class="loader-warning" id="loader-warning">
+                ⏳ Slow connection detected. If loading takes more than 90s, check your internet connection.
+            </div>
+            <div class="loader-error" id="loader-error">
+                <strong>⚠️ CDN Loading Error</strong><br>
+                Please check your internet connection and try again.<br>
+                <a href="javascript:location.reload()">Reload</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="main-menu" class="screen active">
+        <h1 class="menu-title">CRIMSON LANE</h1>
+        <p class="menu-subtitle">Mobile MOBA</p>
+        <div class="menu-buttons">
+            <button class="btn" id="menu-play-btn">Play</button>
+            <button class="btn btn-secondary" id="menu-multiplayer-btn" disabled>Multiplayer</button>
+            <button class="btn btn-secondary" id="menu-settings-btn">Settings</button>
+        </div>
+    </div>
+
+    <!-- Play Flow -->
+    <div id="play-flow" class="screen">
+        <div class="play-header">PLAY FLOW</div>
+        <div id="play-step-1" class="play-step">
+            <h2>Choose Your Side</h2>
+            <div class="opt-group">
+                <button class="opt-btn" data-side="sentinel">Sentinel</button>
+                <button class="opt-btn" data-side="scourge">Scourge</button>
+            </div>
+            <div style="margin-top: 2rem;">
+                <button class="btn btn-back" id="play-back-btn">🔙 Back</button>
+                <button class="btn" id="play-continue-btn" disabled>Continue</button>
+            </div>
+        </div>
+        <div id="play-step-2" class="play-step" style="display: none;">
+            <h2>Choose Team Size</h2>
+            <div class="opt-group">
+                <button class="opt-btn" data-mode="5">5 vs 5</button>
+                <button class="opt-btn" data-mode="3">3 vs 3</button>
+                <button class="opt-btn" data-mode="1">1 vs 1</button>
+            </div>
+            <div style="margin-top: 2rem;">
+                <button class="btn btn-back" id="play-2-back-btn">🔙 Back</button>
+                <button class="btn" id="play-2-continue-btn" disabled>Continue</button>
+            </div>
+        </div>
+        <div id="play-lobby" class="play-step" style="display: none;">
+            <h2>Lobby</h2>
+            <div style="margin-bottom: 1rem; color: #e0d8c8;">
+                <div>Side: <span id="lobby-side" style="color: #ffcc44; font-weight: bold;"></span></div>
+                <div>Team Size: <span id="lobby-size" style="color: #ffcc44; font-weight: bold;"></span></div>
+            </div>
+            <div style="margin-bottom: 2rem; color: #666688;">
+                <div>Heroes: <span id="lobby-heroes">Lich, Sniper, Dragon Knight, Shadow Fiend, Windrunner</span></div>
+            </div>
+            <button class="btn btn-back" id="lobby-back-btn">🔙 Back</button>
+            <button class="btn" id="lobby-start-btn">⚔️ Start Game</button>
+        </div>
+    </div>
+
+    <!-- Settings Screen -->
+    <div id="settings-screen" class="screen">
+        <div class="settings-header">
+            <button class="btn btn-back" id="settings-back-btn">🔙 Back</button>
+            <h2 class="settings-title">Settings</h2>
+        </div>
+        <div class="settings-tabs">
+            <button class="tab active" data-tab="hero-viewer">Hero Viewer</button>
+            <button class="tab" data-tab="general">General</button>
+            <button class="tab" data-tab="audio">Audio</button>
+        </div>
+        <div id="hero-viewer-panel" class="settings-pane" style="display: none;">
+            <div id="hv-header">
+                <div class="hv-back-btn" id="hv-back-btn">🔙</div>
+                <div class="hv-title">Hero Viewer</div>
+            </div>
+            <div id="hv-hero-list">
+                <!-- Hero list will be populated by hero-viewer.js -->
+            </div>
+            <div id="hv-viewer-container">
+                <div class="hv-hero-view">
+                    <div id="hv-hero-name" style="font-size: 2rem; color: #ffcc44; margin-bottom: 1rem;"></div>
+                    <div class="hv-canvas-container">
+                        <canvas id="hv-hero-canvas"></canvas>
+                    </div>
+                    <div class="hv-stats-panel">
+                        <h3>Hero Stats</h3>
+                        <div class="hv-stat-row"><span class="hv-stat-label">Level</span><span class="hv-stat-value" id="hv-level">1</span></div>
+                        <div class="hv-stat-row"><span class="hv-stat-label">HP</span><span class="hv-stat-value" id="hv-hp">500/500</span></div>
+                        <div class="hv-stat-row"><span class="hv-stat-label">Mana</span><span class="hv-stat-value" id="hv-mana">200/200</span></div>
+                        <div class="hv-stat-row"><span class="hv-stat-label">Damage</span><span class="hv-stat-value" id="hv-damage">50</span></div>
+                        <div class="hv-stat-row"><span class="hv-stat-label">Armor</span><span class="hv-stat-value" id="hv-armor">2</span></div>
+                        <div class="hv-stat-row"><span class="hv-stat-label">Move Speed</span><span class="hv-stat-value" id="hv-movespeed">300</span></div>
+                        <div class="hv-stat-row"><span class="hv-stat-label">Attack Range</span><span class="hv-stat-value" id="hv-range">150</span></div>
+                    </div>
+                    <div class="hv-skill-grid">
+                        <div class="hv-skill-slot">
+                            <div class="hv-skill-key">Q</div>
+                            <div class="hv-skill-type" id="hv-skill-q-type">Active</div>
+                            <div class="hv-skill-info" id="hv-skill-q-info">Mana: 100 | CD: 8s</div>
+                        </div>
+                        <div class="hv-skill-slot">
+                            <div class="hv-skill-key">W</div>
+                            <div class="hv-skill-type" id="hv-skill-w-type">Active</div>
+                            <div class="hv-skill-info" id="hv-skill-w-info">Mana: 100 | CD: 8s</div>
+                        </div>
+                        <div class="hv-skill-slot">
+                            <div class="hv-skill-key">E</div>
+                            <div class="hv-skill-type" id="hv-skill-e-type">Active</div>
+                            <div class="hv-skill-info" id="hv-skill-e-info">Mana: 100 | CD: 8s</div>
+                        </div>
+                        <div class="hv-skill-slot">
+                            <div class="hv-skill-key">R</div>
+                            <div class="hv-skill-type" id="hv-skill-r-type">Active</div>
+                            <div class="hv-skill-info" id="hv-skill-r-info">Mana: 200 | CD: 60s</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                        <button class="btn" id="hv-anim-idle" style="flex: 1">Idle</button>
+                        <button class="btn" id="hv-anim-walk" style="flex: 1">Walk</button>
+                        <button class="btn" id="hv-anim-attack" style="flex: 1">Attack</button>
+                        <button class="btn" id="hv-anim-cast" style="flex: 1">Cast Q</button>
+                        <button class="btn" id="hv-anim-die" style="flex: 1">Die</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="general-panel" class="settings-pane">
+            <h3>General</h3>
+            <p>Language: <span id="general-lang" style="color: #ffcc44; font-weight: bold;">English</span></p>
+            <p>Fullscreen: <span id="general-fullscreen" style="color: #ffcc44; font-weight: bold;">Enabled</span></p>
+        </div>
+        <div id="audio-panel" class="settings-pane">
+            <h3>Audio</h3>
+            <p>Master Volume: <span id="audio-volume" style="color: #ffcc44; font-weight: bold;">80%</span></p>
+            <p>Music Volume: <span id="audio-music" style="color: #ffcc44; font-weight: bold;">50%</span></p>
+            <p>SFX Volume: <span id="audio-sfx" style="color: #ffcc44; font-weight: bold;">100%</span></p>
+        </div>
+    </div>
+
+    <!-- Game HUD -->
+    <div id="game-hud" class="screen">
+        <div class="hud-top-bar">
+            <div class="hud-team-strap" id="hud-sentinel-team">
+                <!-- Sentinel heroes -->
+            </div>
+            <div class="hud-center-info">
+                <div class="hud-timer" id="hud-timer">00:00</div>
+                <div class="hud-day-night" id="hud-day-night">☀️ Day</div>
+            </div>
+            <div class="hud-team-strap" id="hud-scourge-team">
+                <!-- Scourge heroes -->
+            </div>
+        </div>
+        <div class="hud-ancient-indicator sentinel" id="hud-sentinel-ancient">🏰 Sentinel Ancient</div>
+        <div class="hud-ancient-indicator scourge" id="hud-scourge-ancient">🏰 Scourge Ancient</div>
+        <div class="hud-bottom-area">
+            <div class="hud-joystick-zone" id="hud-joystick-zone"></div>
+            <div class="hud-action-zone">
+                <div class="hud-skill-bar">
+                    <button class="hud-skill-btn" id="hud-skill-q">
+                        <span class="hud-skill-icon">❄️</span>
+                        <span class="hud-skill-key">Q</span>
+                    </button>
+                    <button class="hud-skill-btn" id="hud-skill-w">
+                        <span class="hud-skill-icon">🛡️</span>
+                        <span class="hud-skill-key">W</span>
+                    </button>
+                    <button class="hud-skill-btn" id="hud-skill-e">
+                        <span class="hud-skill-icon">⚡</span>
+                        <span class="hud-skill-key">E</span>
+                    </button>
+                    <button class="hud-skill-btn" id="hud-skill-r">
+                        <span class="hud-skill-icon">🌪️</span>
+                        <span class="hud-skill-key">R</span>
+                    </button>
+                </div>
+                <button class="hud-attack-btn" id="hud-attack-btn">👊</button>
+                <div class="hud-inventory">
+                    <div class="hud-item-slot">🛡️</div>
+                    <div class="hud-item-slot">👟</div>
+                    <div class="hud-item-slot">🌿</div>
+                    <div class="hud-item-slot">🗡️</div>
+                    <div class="hud-item-slot">🔮</div>
+                    <div class="hud-item-slot">❤️</div>
+                </div>
+                <button class="hud-shop-btn" id="hud-shop-btn">🛒</button>
+                <button class="hud-minimap-btn" id="hud-minimap-reset-btn">⌖</button>
+            </div>
+        </div>
+        <canvas id="hud-minimap" class="hud-minimap"></canvas>
+    </div>
+
+    <!-- End Screen -->
+    <div id="end-screen">
+        <div class="end-content">
+            <h1 class="end-title end-victory" id="end-title">VICTORY</h1>
+            <div class="end-score" id="end-score">Score: 10-5 | Duration: 18:32</div>
+            <button class="btn" id="end-restart-btn">⚔️ Play Again</button>
+        </div>
+    </div>
+
+    <!-- Canvas for 3D Scene -->
+    <div id="canvas-container"></div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        
+        // Track loading progress
+        let loadedCount = 0;
+        const totalSteps = 3;
+        
+        function updateLoader(stage, completed) {
+            if (completed) {
+                document.getElementById(`loader-stage-${stage}`).classList.add('completed');
+            }
+            loadedCount++;
+            const progress = Math.round((loadedCount / totalSteps) * 100);
+            document.getElementById('loader-bar').style.width = `${progress}%`;
+            document.getElementById('loader-progress').textContent = `${progress}%`;
+        }
+        
+        // Check for slow connection
+        setTimeout(() => {
+            if (loadedCount < totalSteps) {
+                document.getElementById('loader-warning').style.display = 'block';
+            }
+        }, 90000);
+        
+        // Track CDN errors
+        window.addEventListener('error', (e) => {
+            if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) {
+                const src = e.target.src || e.target.href;
+                if (src && (src.includes('esm.sh') || src.includes('cdn.jsdelivr.net'))) {
+                    document.getElementById('loader-error').style.display = 'block';
+                }
+            }
+        }, true);
+        
+        // Load Three.js (tracked)
+        updateLoader(1, true);
+        
+        // Load QR library (tracked)
+        updateLoader(2, true);
+        
+        // Wait for scripts then initialize
+        setTimeout(() => {
+            updateLoader(3, true);
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.display = 'none';
+                // Main init happens in js/main.js
+            }, 500);
+        }, 1000);
+        
+        // Expose app ready function
+        window._appReady = function() {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen) {
+                loadingScreen.style.display = 'none';
+            }
+            console.log('App ready - loading screen hidden');
+        };
+        
+        // Export for other modules
+        window.CRIMSON_LANE = {
+            THREE: THREE,
+            loaded: false,
+            init: function() {
+                this.loaded = true;
+                console.log('Crimson Lane initialized');
+            }
+        };
+    </script>
+    
+    <!-- Main Game Script -->
+    <script src="js/main.js" type="module"></script>
+</body>
+</html>

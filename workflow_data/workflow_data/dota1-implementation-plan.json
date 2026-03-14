@@ -1,0 +1,41 @@
+{
+  "name": "dota1-implementation-plan",
+  "id": "DEuDBtclPlD70c3y",
+  "nodes": [
+    {
+      "id": "21509431-72d3-482a-a602-a2c04eedad02",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ],
+      "parameters": {},
+      "name": "Start"
+    },
+    {
+      "id": "50be43c0-7849-4f00-b121-b32e4976e4a4",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ],
+      "parameters": {
+        "path": "dota1-implementation"
+      },
+      "name": "Start Workflow"
+    }
+  ],
+  "connections": {},
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "922f6cbe-db99-44dd-aa31-099e886a493a",
+  "meta": {
+    "instanceId": "1aa738511cb804c5991cfd219ce251ebf49430f45e7fd76af7b7cd81d24ece49"
+  },
+  "tags": []
+}
