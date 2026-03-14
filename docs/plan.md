@@ -18,6 +18,16 @@ Game rules, systems, and technical contracts for Crimson Lane (mobile browser MO
 **Stack:** HTML · CSS · JavaScript · Three.js.
 **Mode:** Solo vs AI. Multiplayer (PeerJS/WebRTC) planned later.
 
+### Legacy authenticity baseline (DotA 1 old days)
+
+This project targets a **DotA Allstars 6.65-era feel** running as a Warcraft III: The Frozen Throne custom-map style game (commonly paired with WC3 patch 1.24c in that era).
+
+Scope intent:
+
+- Keep the **"DotA 1" identity** (pre-Dota 2 feel): lane pressure, last hit/deny, punishing positioning, concise but high-impact skills.
+- Prefer **readable and stable gameplay contracts** over perfect historical parity for every number.
+- "Good enough old-day balance" is the target; avoid over-complex modern systems.
+
 ### MVP content
 
 - 1 map (100x100, 3 lanes, river, jungle, bases)
@@ -54,6 +64,49 @@ Multiplayer, matchmaking, login, ranked, draft/ban, replay, tree destruction.
 - Bases at opposite corners (Scourge bottom-left, Sentinel top-right).
 - Trees are static visual blockers (no destruction in MVP).
 
+### Map orientation and win direction (Dota 1-like)
+
+This project uses the following fixed orientation:
+
+- **Bottom-left base:** Scourge spawn/start.
+- **Top-right base:** Sentinel spawn/start.
+- If player starts at **bottom-left**, the macro objective is to push lanes **toward top-right** and destroy the top-right Ancient.
+- If player starts at **top-right**, objective is mirrored toward bottom-left.
+
+### Three-lane structure (classic MOBA)
+
+- **Top lane:** side lane hugging top edge; longer travel, higher flank risk.
+- **Mid lane:** shortest path between bases; fastest tower pressure and rune/river contest.
+- **Bottom lane:** side lane hugging bottom edge; mirrored to top lane.
+
+Each lane is a sequence of:
+
+`friendly T1 -> friendly T2 -> friendly T3 -> enemy T1 -> enemy T2 -> enemy T3 -> enemy barracks -> enemy Ancient`
+
+For lane navigation clarity (from your own base outward), the practical checkpoint order is:
+
+`base gate -> inner tower (T3) -> middle tower (T2) -> outer tower (T1, near river) -> river -> enemy outer tower`
+
+This explicitly supports the requested mental model: **base -> first tower -> second tower -> river -> push to win**.
+
+### Jungle and river role
+
+- **River (mid crossing):** natural contest line and rotate route between top/bot.
+- **Jungle (both sides):** farming fallback, gank paths, neutral camp economy.
+- **Vision pressure:** river ramps and jungle entrances are primary ambush points.
+
+### Day / Night cycle (classic pressure rhythm)
+
+- Match starts in **daylight**.
+- Cycle duration: **5 minutes day, 5 minutes night**, repeating.
+- Default hero vision baseline:
+  - **Day:** 1800
+  - **Night:** 800
+- Transition effects:
+  - Night increases gank pressure and ambush value.
+  - Day restores safer map reads and longer initiation windows.
+- HUD must always show current phase (sun/moon indicator next to timer).
+
 ---
 
 ## 4. Camera & Minimap
@@ -70,6 +123,15 @@ Multiplayer, matchmaking, login, ranked, draft/ban, replay, tree destruction.
 - Show: allied/enemy heroes, creeps, towers, barracks, ancient, jungle camps, player position.
 - Click/tap to pan camera.
 - Planned: fog of war overlay, entity dots (see Requirements Plan in [index.md](index.md)).
+
+### Top HUD layout (classic facing teams)
+
+Top HUD follows old DotA readability:
+
+- **Top-left strip:** allied hero list (up to 5 slots), portrait + HP state + dead/alive cue.
+- **Top-right strip:** enemy hero list (up to 5 slots), mirrored layout.
+- **Top-center:** match timer (`mm:ss`) + day/night icon + optional kill score.
+- Keep both team strips visible at all times for fast threat scanning.
 
 ---
 
@@ -101,11 +163,104 @@ RespawnTime = 5 + level * 2
 - XP from nearby kills → level up → unlock/improve abilities.
 - Gold from last hits, kills, objectives → buy items.
 
+### XP receive range (implementation contract)
+
+To match old-DotA lane behavior, XP gain uses area sharing rules:
+
+- **XP assist radius:** 1000 world units from dying unit.
+- Allied heroes within radius share XP by rule (equal-share baseline in MVP).
+- Heroes outside radius receive **0** XP from that death.
+- Dead heroes receive **0** XP.
+- Deny rule baseline:
+  - denied allied creep grants **reduced XP** to nearby enemies (target 50% baseline),
+  - grants **0 gold** to enemies.
+
+This section is authoritative for "how far hero must be to receive XP."
+
 ---
 
 ## 6. Ability System
 
 Each hero has Q, W, E, R. System supports: target skills, area skills, skillshots, passives, cooldowns, mana cost, cast time, projectiles, status effects, level scaling.
+
+### Garena-style mobile cast modes (contract)
+
+Each active skill supports one or more cast modes based on `castType` and `skillType`.
+
+#### 1) Quick cast (single tap)
+
+- **Self / self-radius active:** cast immediately on tap (no indicator confirmation).
+- **Unit-target active:** tap casts on highest-priority valid unit in range:
+  1. Enemy hero under aim cone/proximity
+  2. Enemy hero nearest to caster
+  3. Enemy creep/neutral nearest to caster
+- **Point/line active:** tap casts toward hero facing direction at clamped max range.
+
+#### 2) Aim cast (drag -> release)
+
+- Press/drag skill button to open indicator (range ring + line/cone/aoe ghost).
+- Drag updates target point/direction in real time.
+- Release commits cast at resolved point (raycast ground, then clamp to cast range).
+- Cancel by dragging outside cancel radius or releasing on cancel zone.
+
+#### 3) Double-tap smart cast
+
+- Double-tap attempts nearest valid enemy hero in range.
+- If no hero is valid, falls back to nearest valid creep/neutral.
+- If no valid target exists, cast is rejected with no mana/cooldown spend.
+
+### Cast validity and range application
+
+Range checks happen before mana spend and cooldown start.
+
+#### Hero attack range
+
+- Basic attack is valid when target distance is within:
+  `distance(caster, target) <= attackRange + hitBuffer`
+- Ranged heroes use projectile travel after lock-in; melee requires in-range contact.
+
+#### Skill cast range
+
+- **Targeted skills:** must satisfy `distance(caster, targetPointOrUnit) <= castRangeByLevel[level]`.
+- **Line skills:** endpoint is clamped to cast range; hit test then uses line width/length.
+- **AoE point skills:** center point must be in cast range; affected units then checked by effect radius.
+- **Self / self-radius:** skip target range check.
+- **Global:** skip distance check, still require target-rule validity.
+- **Passive / toggle:** no cast range gate on button press itself.
+
+#### Range resolution rules
+
+- Use world-space ground-plane distance (not screen pixels).
+- Use deterministic clamp function so desktop/mobile/net replay produce same result.
+- If out of range, reject cast and keep mana/cooldown unchanged.
+
+### Skill type behavior (active/passive/toggle/channel)
+
+#### Active
+
+- Triggered by cast input.
+- Consumes mana on successful cast start.
+- Starts cooldown on successful cast start (or on release for channel skills).
+
+#### Passive
+
+- Always-on and non-clickable from HUD.
+- No mana cost, no cooldown button interaction.
+- Effects applied by combat hooks (on attack, on hit, aura tick, etc.).
+
+#### Toggle (orb/buff style)
+
+- Tap switches ON/OFF state.
+- While ON, ability modifies a recurring action (usually basic attacks or aura tick).
+- Resource cost applies per proc/tick, not per toggle press.
+- If resource check fails, proc is skipped and toggle follows hero-specific rule
+  (default for this project: auto-disable and show low-mana feedback).
+
+#### Channel (if defined)
+
+- Cast start locks into channel state.
+- Interrupted by stun, silence (if configured), forced move, or death.
+- Cooldown and mana handling follow per-skill config (`onStart` or `onComplete`).
 
 ### Skill cast range taxonomy
 
@@ -159,6 +314,57 @@ Stun, slow, silence, knockback.
 ### Cast pipeline
 
 1. Input → 2. Target validation → 3. Cast start → 4. Animation/wind-up → 5. Mana spend → 6. Cooldown start → 7. Projectile/effect → 8. Hit resolution → 9. Damage/status → 10. VFX/audio.
+
+### Mobile cast UX guardrails
+
+- One touch ID owns joystick; other touches may cast skills/attack.
+- Skill-cast touch must never hijack joystick ownership.
+- During aim cast, show cast range boundary clearly.
+- Release outside valid range clamps or cancels per skill config (must be deterministic).
+- Network/replay path uses resolved command payload only:
+  - `slot`, `castMode`, `targetType`, `targetPos|targetId`, `timestampTick`.
+
+### Drow Ranger Q — Frost Shot (project contract)
+
+`Frost Shot` (Frost Arrows style orb) is a **toggle attack modifier**.
+
+- Tap `Q` toggles state:
+  - **ON:** skill button shows icy blue highlight ("light on" state).
+  - **OFF:** normal skill button style.
+- When ON, each basic attack that successfully fires consumes **8 mana per shot**.
+- On proc, attack applies:
+  - bonus magic damage (by level config),
+  - movement slow (by level config duration).
+- If current mana `< 8` at shot release:
+  - attack becomes normal (no frost modifier),
+  - toggle auto-disables,
+  - low-mana feedback shown on Q button.
+- Frost modifier uses hero basic attack range (no separate cast range).
+
+### Hero skill balance baseline (old-day, not over-complex)
+
+Balance goal: each hero feels unique and viable without modern overload mechanics.
+
+#### Kit identity rules
+
+- Every hero keeps one clear identity:
+  - carry scaler, nuker, initiator, disabler, pusher, or utility support.
+- Q/W/E/R must avoid redundant effects (no two near-identical buttons in one kit).
+- One signature "power moment" per hero (usually R, sometimes high-skill Q/W combo).
+
+#### Budget rules (MVP guidance)
+
+- Basic damage/nuke skills: moderate mana, short-to-medium cooldown.
+- Hard control (stun/silence/root): higher mana and longer cooldown than pure damage.
+- Ultimates: highest impact, clearly telegraphed, long cooldown.
+- Lane phase rule: heroes should not reliably 100-0 equal-level enemy before level 6 without major misplay.
+
+#### Readability and counterplay
+
+- Each dangerous skill needs at least one counter window:
+  - cast animation, travel time, short range commitment, or cooldown punish.
+- Passive/toggle power must be visible in HUD/VFX (no hidden state spikes).
+- For toggles (e.g., Frost Shot), sustained power is balanced by mana drain over repeated attacks.
 
 ### Required ability categories (across 5-hero roster)
 
