@@ -79,6 +79,7 @@ Verified against code — these features are shipped and working.
 | **Controls** | Desktop (arrow keys, click move/attack, Q/W/E/R, Space stop, scroll zoom, B shop). Mobile (joystick, attack button, skill buttons). |
 | **Gameplay spec clarity (mobile controls + shop)** | Expanded [plan.md](plan.md) with SDLC-ready control/shop contracts: mobile landscape thumb zones, primary attack + skill cluster behavior, deterministic virtual joystick geometry/ownership/output mapping, and shop panel/buy-flow simulation events (`openShopCommand`, `buyItemCommand`, `itemPurchased`, `itemPurchaseFailed`). |
 | **MOBA gameplay deep-spec (casting, range, map flow)** | Added detailed Garena-style mobile cast modes (quick cast, drag-aim-release, double-tap smart cast), deterministic range validation rules for attack/skills, skill-type contracts (active/passive/toggle/channel), and explicit Drow Ranger Frost Arrows toggle behavior (`8 mana per shot` when enabled + highlighted ON state). Expanded map section with fixed orientation and lane win-direction: **bottom-left start pushes to top-right** (mirrored when sides swap). (`docs/plan.md`, `docs/heroes/drow-ranger.md`) |
+| **DotA 1 legacy baseline spec (6.65-style)** | Added implementation contracts for old-day authenticity: DotA 1 identity baseline (WC3 TFT custom-map feel), classic top HUD team strips (allies left-top, enemies right-top, timer/day-night center), XP receive radius rules (1000 AoE baseline + deny XP reduction), day/night cycle with vision shift, and lane checkpoint order from base → towers → river. (`docs/plan.md`) |
 | **AI** | Hero bots (lane march, fight, retreat, fountain regen, skill casting, item buying). Creep AI (lane pathing, target priority). **Bot difficulty presets** (Easy/Normal/Hard) tuning retreat HP threshold, cast reaction time, spell accuracy, and item-buy frequency — lobby UI selector wired through `js/ai.js` → `js/items.js`. |
 | **Audio** | 18 SFX (hit, ranged, magic, death, levelup, gold, spawn, respawn, tower hit/death, frost, shrapnel, chain frost, assassinate channel/fire, fire, windrun, buy). Procedural main theme. **SFX wiring:** playSFX(name) in js/audio.js with Web Audio fallback beeps when sounds/ empty; called at damage (applyDamage), death (killUnit, applyCreepDamage), buy (buyItem), gold (grantBounty); levelup supported—call playSFX('levelup') when hero level increases. |
 | **Polish VFX** | Level-up ring burst: two `spawnRing` calls (gold 1.5u + white 0.8u) added to `onLevelUp()` in `combat.js`. Hero death white flash: `group.traverse` sets emissive to white on kill, `setTimeout 200ms` hides the group. Respawn rotation fix: `animations.js` now checks `_prevAnim === 'die'` before overwriting it, resetting `group.rotation.x/z` when leaving die state. |
@@ -99,7 +100,20 @@ Verified against code — these features are shipped and working.
 
 Scoped and spec'd — ready to implement. Ordered by priority.
 
-*(None — Tests & balance completed with rebuild.)*
+1. **Implement classic top HUD team strips + center clock/day-night indicator**  
+   Align in-game HUD with old DotA layout contract: allies left-top, enemies right-top, timer and phase icon center.
+
+2. **Implement day/night simulation and vision ranges**  
+   Add 5m/5m cycle and default hero vision shift (day 1800, night 800) with clear transition feedback.
+
+3. **Implement XP receive radius and deny XP rules**  
+   Enforce 1000 XP radius, out-of-range/no-XP behavior, and reduced deny XP baseline.
+
+4. **Implement lane checkpoint debug/authoring data**  
+   Ensure lane path definitions explicitly expose base->T3->T2->T1->river->enemy progression for all three lanes.
+
+5. **Run old-day hero skill balance pass (MVP)**  
+   Tune mana/cooldown/impact budgets so all 20 heroes keep unique identity without over-complex mechanics.
 
 ### Backlog (future — not yet scoped)
 

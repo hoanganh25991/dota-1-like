@@ -18,6 +18,16 @@ Game rules, systems, and technical contracts for Crimson Lane (mobile browser MO
 **Stack:** HTML · CSS · JavaScript · Three.js.
 **Mode:** Solo vs AI. Multiplayer (PeerJS/WebRTC) planned later.
 
+### Legacy authenticity baseline (DotA 1 old days)
+
+This project targets a **DotA Allstars 6.65-era feel** running as a Warcraft III: The Frozen Throne custom-map style game (commonly paired with WC3 patch 1.24c in that era).
+
+Scope intent:
+
+- Keep the **"DotA 1" identity** (pre-Dota 2 feel): lane pressure, last hit/deny, punishing positioning, concise but high-impact skills.
+- Prefer **readable and stable gameplay contracts** over perfect historical parity for every number.
+- "Good enough old-day balance" is the target; avoid over-complex modern systems.
+
 ### MVP content
 
 - 1 map (100x100, 3 lanes, river, jungle, bases)
@@ -73,11 +83,29 @@ Each lane is a sequence of:
 
 `friendly T1 -> friendly T2 -> friendly T3 -> enemy T1 -> enemy T2 -> enemy T3 -> enemy barracks -> enemy Ancient`
 
+For lane navigation clarity (from your own base outward), the practical checkpoint order is:
+
+`base gate -> inner tower (T3) -> middle tower (T2) -> outer tower (T1, near river) -> river -> enemy outer tower`
+
+This explicitly supports the requested mental model: **base -> first tower -> second tower -> river -> push to win**.
+
 ### Jungle and river role
 
 - **River (mid crossing):** natural contest line and rotate route between top/bot.
 - **Jungle (both sides):** farming fallback, gank paths, neutral camp economy.
 - **Vision pressure:** river ramps and jungle entrances are primary ambush points.
+
+### Day / Night cycle (classic pressure rhythm)
+
+- Match starts in **daylight**.
+- Cycle duration: **5 minutes day, 5 minutes night**, repeating.
+- Default hero vision baseline:
+  - **Day:** 1800
+  - **Night:** 800
+- Transition effects:
+  - Night increases gank pressure and ambush value.
+  - Day restores safer map reads and longer initiation windows.
+- HUD must always show current phase (sun/moon indicator next to timer).
 
 ---
 
@@ -95,6 +123,15 @@ Each lane is a sequence of:
 - Show: allied/enemy heroes, creeps, towers, barracks, ancient, jungle camps, player position.
 - Click/tap to pan camera.
 - Planned: fog of war overlay, entity dots (see Requirements Plan in [index.md](index.md)).
+
+### Top HUD layout (classic facing teams)
+
+Top HUD follows old DotA readability:
+
+- **Top-left strip:** allied hero list (up to 5 slots), portrait + HP state + dead/alive cue.
+- **Top-right strip:** enemy hero list (up to 5 slots), mirrored layout.
+- **Top-center:** match timer (`mm:ss`) + day/night icon + optional kill score.
+- Keep both team strips visible at all times for fast threat scanning.
 
 ---
 
@@ -125,6 +162,20 @@ RespawnTime = 5 + level * 2
 
 - XP from nearby kills → level up → unlock/improve abilities.
 - Gold from last hits, kills, objectives → buy items.
+
+### XP receive range (implementation contract)
+
+To match old-DotA lane behavior, XP gain uses area sharing rules:
+
+- **XP assist radius:** 1000 world units from dying unit.
+- Allied heroes within radius share XP by rule (equal-share baseline in MVP).
+- Heroes outside radius receive **0** XP from that death.
+- Dead heroes receive **0** XP.
+- Deny rule baseline:
+  - denied allied creep grants **reduced XP** to nearby enemies (target 50% baseline),
+  - grants **0 gold** to enemies.
+
+This section is authoritative for "how far hero must be to receive XP."
 
 ---
 
@@ -289,6 +340,31 @@ Stun, slow, silence, knockback.
   - toggle auto-disables,
   - low-mana feedback shown on Q button.
 - Frost modifier uses hero basic attack range (no separate cast range).
+
+### Hero skill balance baseline (old-day, not over-complex)
+
+Balance goal: each hero feels unique and viable without modern overload mechanics.
+
+#### Kit identity rules
+
+- Every hero keeps one clear identity:
+  - carry scaler, nuker, initiator, disabler, pusher, or utility support.
+- Q/W/E/R must avoid redundant effects (no two near-identical buttons in one kit).
+- One signature "power moment" per hero (usually R, sometimes high-skill Q/W combo).
+
+#### Budget rules (MVP guidance)
+
+- Basic damage/nuke skills: moderate mana, short-to-medium cooldown.
+- Hard control (stun/silence/root): higher mana and longer cooldown than pure damage.
+- Ultimates: highest impact, clearly telegraphed, long cooldown.
+- Lane phase rule: heroes should not reliably 100-0 equal-level enemy before level 6 without major misplay.
+
+#### Readability and counterplay
+
+- Each dangerous skill needs at least one counter window:
+  - cast animation, travel time, short range commitment, or cooldown punish.
+- Passive/toggle power must be visible in HUD/VFX (no hidden state spikes).
+- For toggles (e.g., Frost Shot), sustained power is balanced by mana drain over repeated attacks.
 
 ### Required ability categories (across 5-hero roster)
 
