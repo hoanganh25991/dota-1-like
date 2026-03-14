@@ -379,7 +379,7 @@ export const TARGET_TYPES = {
     enemyUnit: 'enemy-unit',
     allyUnit: 'ally-unit',
     enemyUnitOrGround: 'enemy-unit-or-ground',
-    groundOr AllyUnit: 'ground-or-ally-unit'
+    groundOrAllyUnit: 'ground-or-ally-unit'
 };
 
 /**
