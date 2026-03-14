@@ -287,6 +287,60 @@ Coverage: movement, mana, survivability, damage, mobility active, offensive acti
 }
 ```
 
+### Shop definition (mobile landscape + desktop parity)
+
+The shop is treated as a gameplay system, not only a UI panel. It must have deterministic behavior so player and bot purchasing stay consistent.
+
+#### Entry points
+
+- **Mobile:** Tap shop button above/right of inventory stack.
+- **Desktop:** Press `B` or click the same HUD shop button.
+- **State:** `closed -> browsing -> confirm-buy -> closed` (or back to browsing).
+
+#### Panel layout contract
+
+- **Header:** current gold, close button, optional search/filter.
+- **Category rail (left):** Consumable, Attributes, Defense, Mobility, Magic, Upgrades.
+- **Item list (center):** item cards with icon, name, cost, and compose/recipe marker.
+- **Detail pane (right):** stats/active/passive text, components tree, `Buy` action.
+- **Quick-buy strip (bottom):** queued target items (for future automation parity with bots).
+
+#### Buy rules
+
+1. Player selects an item card.
+2. System validates: enough gold, inventory room/stacking, recipe/component constraints.
+3. On success:
+   - deduct gold atomically,
+   - grant item into inventory or merge components,
+   - emit purchase event for announcer/audio/UI hooks.
+4. On failure:
+   - no state mutation,
+   - show explicit reason (`insufficient_gold`, `inventory_full`, `requirements_missing`).
+
+#### Input and feedback
+
+- Single tap selects item (detail view).
+- Second tap on `Buy` confirms purchase (no long press required).
+- Disabled `Buy` button uses low-opacity + reason text.
+- Successful buy flashes inventory slot and plays buy SFX.
+
+#### Simulation contract
+
+Shop APIs should be command-based and shared by human + AI:
+
+```text
+openShopCommand
+closeShopCommand
+buyItemCommand(itemId)
+sellItemCommand(slotIndex)   // optional post-MVP
+```
+
+Events emitted from simulation:
+
+```text
+shopOpened, shopClosed, itemPurchased, itemPurchaseFailed
+```
+
 ---
 
 ## 12. Controls
@@ -296,11 +350,69 @@ Coverage: movement, mana, survivability, damage, mobility active, offensive acti
 - Left: virtual joystick (movement).
 - Right: attack, Q/W/E/R, item actives, shop access, TP.
 
+### Mobile landscape layout contract (thumb zones)
+
+Use landscape-first HUD zones to prevent hand overlap and accidental taps:
+
+- **Left movement zone:** `0vw-46vw`, bottom-weighted; reserved for joystick ownership.
+- **Center view zone:** `30vw-70vw`; lowest HUD density to preserve battlefield visibility.
+- **Right action zone:** `54vw-100vw`; skills, attack, item actives, shop trigger.
+- **Bottom safe band:** keep core buttons above device gesture/home indicator area.
+
+Minimum touch targets:
+
+- Primary attack: `72-88px` diameter.
+- Skills/items: `56-72px` diameter.
+- Spacing between action buttons: `>= 10px`.
+
+### Primary attack + skill cluster definition (mobile)
+
+- **Primary attack** is the anchor button on lower-right and must be the largest action control.
+- **Skill cluster** is arranged around attack in a reachable arc/diamond:
+  - `Q` nearest and fastest to reach,
+  - `W`/`E` lateral positions,
+  - `R` upper position with distinct ultimate styling.
+- Passive skills remain non-interactive (`disabled` visual state).
+- Toggle skills persist ON/OFF state with clear active glow.
+- Attack button state mirrors combat availability:
+  - **Active:** full opacity + pulse/glow.
+  - **Out of range/no target:** dimmed + non-interactive.
+
 ### Skill casting (planned)
 
 - Tap: quick cast.
 - Drag: directional/area aim → release to cast.
 - Double-tap: auto-target nearest valid target.
+
+### Virtual joystick definition
+
+Joystick behavior must produce deterministic movement vectors and clean multi-touch ownership.
+
+#### Geometry
+
+- Base radius: `~50-60px`.
+- Knob radius: `~22-30px`.
+- Max knob displacement equals base radius.
+- Dead zone: `~18%` of base radius (ignore micro jitter).
+
+#### Input ownership
+
+- First touch inside left movement zone claims joystick control.
+- Claimed touch ID remains bound until `touchend`/`touchcancel`.
+- Additional touches cannot steal joystick while claimed.
+
+#### Output mapping
+
+1. Convert knob offset to normalized vector `(-1..1, -1..1)`.
+2. Apply dead zone + optional light smoothing.
+3. Send `moveCommand` continuously while claimed.
+4. On release, send zero vector and visually recenter immediately.
+
+#### Edge behavior
+
+- If touch starts in movement zone but outside current base, joystick can re-anchor to touch start (mobile comfort mode).
+- Clamp final movement vector magnitude to `1.0`.
+- Prevent joystick events from triggering skill/attack buttons (strict zone separation).
 
 ### Desktop
 
