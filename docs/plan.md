@@ -54,6 +54,31 @@ Multiplayer, matchmaking, login, ranked, draft/ban, replay, tree destruction.
 - Bases at opposite corners (Scourge bottom-left, Sentinel top-right).
 - Trees are static visual blockers (no destruction in MVP).
 
+### Map orientation and win direction (Dota 1-like)
+
+This project uses the following fixed orientation:
+
+- **Bottom-left base:** Scourge spawn/start.
+- **Top-right base:** Sentinel spawn/start.
+- If player starts at **bottom-left**, the macro objective is to push lanes **toward top-right** and destroy the top-right Ancient.
+- If player starts at **top-right**, objective is mirrored toward bottom-left.
+
+### Three-lane structure (classic MOBA)
+
+- **Top lane:** side lane hugging top edge; longer travel, higher flank risk.
+- **Mid lane:** shortest path between bases; fastest tower pressure and rune/river contest.
+- **Bottom lane:** side lane hugging bottom edge; mirrored to top lane.
+
+Each lane is a sequence of:
+
+`friendly T1 -> friendly T2 -> friendly T3 -> enemy T1 -> enemy T2 -> enemy T3 -> enemy barracks -> enemy Ancient`
+
+### Jungle and river role
+
+- **River (mid crossing):** natural contest line and rotate route between top/bot.
+- **Jungle (both sides):** farming fallback, gank paths, neutral camp economy.
+- **Vision pressure:** river ramps and jungle entrances are primary ambush points.
+
 ---
 
 ## 4. Camera & Minimap
@@ -107,6 +132,85 @@ RespawnTime = 5 + level * 2
 
 Each hero has Q, W, E, R. System supports: target skills, area skills, skillshots, passives, cooldowns, mana cost, cast time, projectiles, status effects, level scaling.
 
+### Garena-style mobile cast modes (contract)
+
+Each active skill supports one or more cast modes based on `castType` and `skillType`.
+
+#### 1) Quick cast (single tap)
+
+- **Self / self-radius active:** cast immediately on tap (no indicator confirmation).
+- **Unit-target active:** tap casts on highest-priority valid unit in range:
+  1. Enemy hero under aim cone/proximity
+  2. Enemy hero nearest to caster
+  3. Enemy creep/neutral nearest to caster
+- **Point/line active:** tap casts toward hero facing direction at clamped max range.
+
+#### 2) Aim cast (drag -> release)
+
+- Press/drag skill button to open indicator (range ring + line/cone/aoe ghost).
+- Drag updates target point/direction in real time.
+- Release commits cast at resolved point (raycast ground, then clamp to cast range).
+- Cancel by dragging outside cancel radius or releasing on cancel zone.
+
+#### 3) Double-tap smart cast
+
+- Double-tap attempts nearest valid enemy hero in range.
+- If no hero is valid, falls back to nearest valid creep/neutral.
+- If no valid target exists, cast is rejected with no mana/cooldown spend.
+
+### Cast validity and range application
+
+Range checks happen before mana spend and cooldown start.
+
+#### Hero attack range
+
+- Basic attack is valid when target distance is within:
+  `distance(caster, target) <= attackRange + hitBuffer`
+- Ranged heroes use projectile travel after lock-in; melee requires in-range contact.
+
+#### Skill cast range
+
+- **Targeted skills:** must satisfy `distance(caster, targetPointOrUnit) <= castRangeByLevel[level]`.
+- **Line skills:** endpoint is clamped to cast range; hit test then uses line width/length.
+- **AoE point skills:** center point must be in cast range; affected units then checked by effect radius.
+- **Self / self-radius:** skip target range check.
+- **Global:** skip distance check, still require target-rule validity.
+- **Passive / toggle:** no cast range gate on button press itself.
+
+#### Range resolution rules
+
+- Use world-space ground-plane distance (not screen pixels).
+- Use deterministic clamp function so desktop/mobile/net replay produce same result.
+- If out of range, reject cast and keep mana/cooldown unchanged.
+
+### Skill type behavior (active/passive/toggle/channel)
+
+#### Active
+
+- Triggered by cast input.
+- Consumes mana on successful cast start.
+- Starts cooldown on successful cast start (or on release for channel skills).
+
+#### Passive
+
+- Always-on and non-clickable from HUD.
+- No mana cost, no cooldown button interaction.
+- Effects applied by combat hooks (on attack, on hit, aura tick, etc.).
+
+#### Toggle (orb/buff style)
+
+- Tap switches ON/OFF state.
+- While ON, ability modifies a recurring action (usually basic attacks or aura tick).
+- Resource cost applies per proc/tick, not per toggle press.
+- If resource check fails, proc is skipped and toggle follows hero-specific rule
+  (default for this project: auto-disable and show low-mana feedback).
+
+#### Channel (if defined)
+
+- Cast start locks into channel state.
+- Interrupted by stun, silence (if configured), forced move, or death.
+- Cooldown and mana handling follow per-skill config (`onStart` or `onComplete`).
+
 ### Skill cast range taxonomy
 
 Every skill must have a clear range definition. Categories:
@@ -159,6 +263,32 @@ Stun, slow, silence, knockback.
 ### Cast pipeline
 
 1. Input → 2. Target validation → 3. Cast start → 4. Animation/wind-up → 5. Mana spend → 6. Cooldown start → 7. Projectile/effect → 8. Hit resolution → 9. Damage/status → 10. VFX/audio.
+
+### Mobile cast UX guardrails
+
+- One touch ID owns joystick; other touches may cast skills/attack.
+- Skill-cast touch must never hijack joystick ownership.
+- During aim cast, show cast range boundary clearly.
+- Release outside valid range clamps or cancels per skill config (must be deterministic).
+- Network/replay path uses resolved command payload only:
+  - `slot`, `castMode`, `targetType`, `targetPos|targetId`, `timestampTick`.
+
+### Drow Ranger Q — Frost Shot (project contract)
+
+`Frost Shot` (Frost Arrows style orb) is a **toggle attack modifier**.
+
+- Tap `Q` toggles state:
+  - **ON:** skill button shows icy blue highlight ("light on" state).
+  - **OFF:** normal skill button style.
+- When ON, each basic attack that successfully fires consumes **8 mana per shot**.
+- On proc, attack applies:
+  - bonus magic damage (by level config),
+  - movement slow (by level config duration).
+- If current mana `< 8` at shot release:
+  - attack becomes normal (no frost modifier),
+  - toggle auto-disables,
+  - low-mana feedback shown on Q button.
+- Frost modifier uses hero basic attack range (no separate cast range).
 
 ### Required ability categories (across 5-hero roster)
 
